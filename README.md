@@ -59,7 +59,7 @@ Usage
 Requires
 --------
 
-- Java 7 (8+ does not work)
+- Java 21
 - MySQL Client + Server
 - RabbitMQ
 
@@ -81,6 +81,46 @@ If you use the `startContainers.sh` script, you don't need
 MySQL Server and RabbitMQ installed locally. Instead,
 Docker needs to be installed as the script will start
 MySQL and RabbitMQ in Docker containers.
+
+Test
+----
+
+### Environment Variables
+
+Set the following environment variables before running tests:
+
+```bash
+export MYSQL_HOST="localhost"
+export MYSQL_PORT="3306"
+export MYSQL_USER="your_mysql_user"
+export MYSQL_PASSWORD="your_mysql_password"
+export RABBITMQ_HOST="localhost"
+export RABBITMQ_USER="your_rabbitmq_user"
+export RABBITMQ_PASSWORD="your_rabbitmq_password"
+```
+
+### Database Setup
+
+Create the required databases and tables by running the SQL scripts:
+
+```bash
+# Create databases
+mysql -u $MYSQL_USER -p$MYSQL_PASSWORD -e "CREATE DATABASE IF NOT EXISTS iddd_common_test;"
+mysql -u $MYSQL_USER -p$MYSQL_PASSWORD -e "CREATE DATABASE IF NOT EXISTS iddd_iam;"
+mysql -u $MYSQL_USER -p$MYSQL_PASSWORD -e "CREATE DATABASE IF NOT EXISTS iddd_collaboration;"
+
+# Create tables
+mysql -u $MYSQL_USER -p$MYSQL_PASSWORD iddd_common_test < iddd_common/src/main/mysql/common.sql
+mysql -u $MYSQL_USER -p$MYSQL_PASSWORD iddd_common_test < iddd_common/src/main/mysql/test_common.sql
+mysql -u $MYSQL_USER -p$MYSQL_PASSWORD iddd_iam < iddd_identityaccess/src/main/mysql/iam.sql
+mysql -u $MYSQL_USER -p$MYSQL_PASSWORD iddd_collaboration < iddd_collaboration/src/main/mysql/collaboration.sql
+```
+
+### Run Tests
+
+```bash
+./gradlew test
+```
 
 Build
 ------

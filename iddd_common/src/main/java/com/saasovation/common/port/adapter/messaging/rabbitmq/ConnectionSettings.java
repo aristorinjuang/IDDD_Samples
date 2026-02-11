@@ -42,10 +42,23 @@ public class ConnectionSettings extends AssertionConcern {
 
     /**
      * Answers a new ConnectionSettings with defaults.
+     * Supports environment variables: RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASSWORD
      * @return ConnectionSettings
      */
     public static ConnectionSettings instance() {
-        return new ConnectionSettings("localhost", -1, "/", null, null);
+        String host = System.getProperty("RABBITMQ_HOST", System.getenv("RABBITMQ_HOST"));
+        if (host == null || host.isEmpty()) {
+            host = "localhost";
+        }
+        String user = System.getProperty("RABBITMQ_USER", System.getenv("RABBITMQ_USER"));
+        if (user == null || user.isEmpty()) {
+            user = "guest";
+        }
+        String password = System.getProperty("RABBITMQ_PASSWORD", System.getenv("RABBITMQ_PASSWORD"));
+        if (password == null || password.isEmpty()) {
+            password = "guest";
+        }
+        return new ConnectionSettings(host, -1, "/", user, password);
     }
 
     /**

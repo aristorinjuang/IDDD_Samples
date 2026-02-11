@@ -68,7 +68,10 @@ public abstract class AbstractQueryService {
         ResultSet result = null;
 
         try {
-            selectStatement = connection.prepareStatement(aQuery);
+            selectStatement = connection.prepareStatement(
+                    aQuery,
+                    ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
 
             this.setStatementArguments(selectStatement, anArguments);
 
@@ -100,7 +103,10 @@ public abstract class AbstractQueryService {
         ResultSet result = null;
 
         try {
-            selectStatement = connection.prepareStatement(aQuery);
+            selectStatement = connection.prepareStatement(
+                    aQuery,
+                    ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
 
             this.setStatementArguments(selectStatement, anArguments);
 

@@ -23,7 +23,6 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.QueueingConsumer.Delivery;
 import com.rabbitmq.client.ShutdownSignalException;
 import com.saasovation.common.port.adapter.messaging.MessageException;
 
@@ -276,7 +275,7 @@ public class MessageConsumer {
                 byte[] aBody) throws IOException {
 
             if (!isClosed()) {
-                handle(this.messageListener(), new Delivery(anEnvelope, aProperties, aBody));
+                handle(this.messageListener(), anEnvelope, aProperties, aBody);
             }
 
             if (isClosed()) {
@@ -294,46 +293,48 @@ public class MessageConsumer {
 
         private void handle(
                 MessageListener aMessageListener,
-                Delivery aDelivery) {
+                Envelope anEnvelope,
+                BasicProperties aProperties,
+                byte[] aBody) {
             try {
-                if (this.filteredMessageType(aDelivery)) {
+                if (this.filteredMessageType(aProperties)) {
                     ;
                 } else if (aMessageListener.type().isBinaryListener()) {
                     aMessageListener
                         .handleMessage(
-                                aDelivery.getProperties().getType(),
-                                aDelivery.getProperties().getMessageId(),
-                                aDelivery.getProperties().getTimestamp(),
-                                aDelivery.getBody(),
-                                aDelivery.getEnvelope().getDeliveryTag(),
-                                aDelivery.getEnvelope().isRedeliver());
+                                aProperties.getType(),
+                                aProperties.getMessageId(),
+                                aProperties.getTimestamp(),
+                                aBody,
+                                anEnvelope.getDeliveryTag(),
+                                anEnvelope.isRedeliver());
                 } else if (aMessageListener.type().isTextListener()) {
                     aMessageListener
                         .handleMessage(
-                                aDelivery.getProperties().getType(),
-                                aDelivery.getProperties().getMessageId(),
-                                aDelivery.getProperties().getTimestamp(),
-                                new String(aDelivery.getBody()),
-                                aDelivery.getEnvelope().getDeliveryTag(),
-                                aDelivery.getEnvelope().isRedeliver());
+                                aProperties.getType(),
+                                aProperties.getMessageId(),
+                                aProperties.getTimestamp(),
+                                new String(aBody),
+                                anEnvelope.getDeliveryTag(),
+                                anEnvelope.isRedeliver());
                 }
 
-                this.ack(aDelivery);
+                this.ack(anEnvelope);
 
             } catch (MessageException e) {
                 // System.out.println("MESSAGE EXCEPTION (MessageConsumer): " + e.getMessage());
-                this.nack(aDelivery, e.isRetry());
+                this.nack(anEnvelope, e.isRetry());
             } catch (Throwable t) {
                 // System.out.println("EXCEPTION (MessageConsumer): " + t.getMessage());
-                this.nack(aDelivery, false);
+                this.nack(anEnvelope, false);
             }
         }
 
-        private void ack(Delivery aDelivery) {
+        private void ack(Envelope anEnvelope) {
             try {
                 if (!isAutoAcknowledged()) {
                     this.getChannel().basicAck(
-                            aDelivery.getEnvelope().getDeliveryTag(),
+                            anEnvelope.getDeliveryTag(),
                             false);
                 }
             } catch (IOException ioe) {
@@ -341,11 +342,11 @@ public class MessageConsumer {
             }
         }
 
-        private void nack(Delivery aDelivery, boolean isRetry) {
+        private void nack(Envelope anEnvelope, boolean isRetry) {
             try {
                 if (!isAutoAcknowledged()) {
                     this.getChannel().basicNack(
-                            aDelivery.getEnvelope().getDeliveryTag(),
+                            anEnvelope.getDeliveryTag(),
                             false,
                             isRetry);
                 }
@@ -354,13 +355,13 @@ public class MessageConsumer {
             }
         }
 
-        private boolean filteredMessageType(Delivery aDelivery) {
+        private boolean filteredMessageType(BasicProperties aProperties) {
             boolean filtered = false;
 
             Set<String> filteredMessageTypes = messageTypes();
 
             if (!filteredMessageTypes.isEmpty()) {
-                String messageType = aDelivery.getProperties().getType();
+                String messageType = aProperties.getType();
 
                 if (messageType == null || !filteredMessageTypes.contains(messageType)) {
                     filtered = true;
